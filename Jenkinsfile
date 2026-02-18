@@ -12,13 +12,8 @@ pipeline {
         stage('Deploy Backend Containers') {
             steps {
                 sh '''
-                # Create a network so containers can talk to each other
                 docker network create app-network || true
-                
-                # Clean up old containers
                 docker rm -f backend1 backend2 || true
-                
-                # Run backends on the custom network
                 docker run -d --name backend1 --network app-network backend-app
                 docker run -d --name backend2 --network app-network backend-app
                 sleep 5
@@ -30,7 +25,7 @@ pipeline {
                 sh '''
                 docker rm -f nginx-lb || true
                 
-                # Start NGINX on the same network (initially with default config)
+                # Start NGINX on the same network
                 docker run -d \
                   --name nginx-lb \
                   --network app-network \
@@ -39,11 +34,8 @@ pipeline {
                 
                 sleep 5
                 
-                # Copy the config file FROM Jenkins workspace INTO the container
-                # This fixes the "not a directory" mount error!
+                # Copy config file into container
                 docker cp nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
-                
-                # Reload NGINX to apply the new configuration
                 docker exec nginx-lb nginx -s reload
                 '''
             }
